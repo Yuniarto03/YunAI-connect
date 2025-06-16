@@ -1,0 +1,198 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lovable AI Data Analyst</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    // Ensure process.env and API_KEY handling aligns with hosting best practices.
+    // The application relies on the hosting environment to set process.env.API_KEY.
+    if (typeof window.process === 'undefined') {
+      window.process = {};
+    }
+    if (typeof window.process.env === 'undefined') {
+      window.process.env = {};
+    }
+    // DO NOT set a placeholder for API_KEY here for hosted environments.
+    // The AppContext will check for process.env.API_KEY. If it's not provided
+    // by the hosting environment, the app will display the "API Key Required" message.
+    if (typeof window.process.env.API_KEY === 'undefined' || window.process.env.API_KEY === null || window.process.env.API_KEY === '') {
+      console.warn(
+        "Gemini API_KEY is not set in the environment (window.process.env.API_KEY). " +
+        "The application requires this to be provided by the hosting environment to function correctly. " +
+        "The 'API Key Required' message will be displayed."
+      );
+    }
+    
+    // Tailwind Custom Configuration
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            'neon-blue': '#00D4FF',
+            'cyber-purple': '#8B5CF6',
+            'matrix-green': '#00FF88',
+            'tech-orange': '#FF6B35',
+            'dark-bg': '#0A0F1E',
+            'light-text': '#E0E0E0',
+            'medium-gray': '#333F58',
+            'dark-gray': '#1E293B',
+            'glass-edge': 'rgba(255, 255, 255, 0.1)',
+            'glass-surface': 'rgba(255, 255, 255, 0.05)',
+            // Standard Tailwind colors used in themes, if not default
+            'green-400': '#4ade80',
+            'lime-500': '#84cc16',
+            'emerald-500': '#10b981',
+            'slate-800': '#1e293b',
+            'slate-900': '#0f172a',
+            'slate-950': '#020617',
+            'slate-100': '#f1f5f9',
+            'slate-700': '#334155',
+            'amber-500': '#f59e0b',
+            'red-500': '#ef4444',
+            'indigo-900': '#312e81',
+            'indigo-100': '#e0e7ff',
+            'indigo-700': '#4338ca',
+            'violet-500': '#8b5cf6',
+            'pink-500': '#ec4899',
+            'sky-900': '#0c4a6e',
+            'blue-950': '#172554',
+            'cyan-400': '#22d3ee',
+            'teal-400': '#2dd4bf',
+            'sky-100': '#e0f2fe',
+            'sky-700': '#0369a1'
+          },
+          boxShadow: {
+            'neon-glow-neon-blue': '0 0 5px #00D4FF, 0 0 10px #00D4FF, 0 0 15px #00D4FF',
+            'neon-glow-cyber-purple': '0 0 5px #8B5CF6, 0 0 10px #8B5CF6, 0 0 15px #8B5CF6',
+            'neon-glow-matrix-green': '0 0 5px #00FF88, 0 0 10px #00FF88, 0 0 15px #00FF88',
+            'neon-glow-tech-orange': '0 0 5px #FF6B35, 0 0 10px #FF6B35, 0 0 15px #FF6B35',
+            'emboss': 'inset 2px 2px 5px rgba(0,0,0,0.5), inset -2px -2px 5px rgba(255,255,255,0.2)',
+            'emboss-dark': 'inset 3px 3px 6px #05070c, inset -3px -3px 6px #1f2b40',
+          },
+          animation: {
+            'pulse-fast': 'pulse 1s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+            'slide-in': 'slideIn 0.5s ease-out forwards',
+            'fade-in': 'fadeIn 0.5s ease-out forwards',
+            'dock-item-float': 'dockItemFloat 6s ease-in-out infinite alternate',
+          },
+          keyframes: {
+            pulse: { // Ensure 'pulse' keyframe is defined if 'pulse-fast' uses it
+              '0%, 100%': { opacity: 1 },
+              '50%': { opacity: .5 },
+            },
+            slideIn: {
+              '0%': { transform: 'translateX(-100%)', opacity: '0' },
+              '100%': { transform: 'translateX(0)', opacity: '1' },
+            },
+            fadeIn: {
+              '0%': { opacity: '0' },
+              '100%': { opacity: '1' },
+            },
+            dockItemFloat: {
+              '0%': { transform: 'translateY(0px)' },
+              '50%': { transform: 'translateY(-3px)' },
+              '100%': { transform: 'translateY(0px)' },
+            }
+          }
+        },
+      },
+      plugins: [],
+    }
+  </script>
+  <style>
+    :root {
+      --futuristic-scrollbar-thumb: #8B5CF6; /* Default: cyber-purple */
+      --futuristic-scrollbar-thumb-hover: #00D4FF; /* Default: neon-blue */
+      --futuristic-scrollbar-track: #1E293B; /* Default: dark-gray */
+      --dock-height: 70px; /* Height of the bottom dock */
+    }
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      /* background-color and color are set by App.tsx based on theme */
+      /* The 'no-motion' class will be added/removed by App.tsx based on reduceMotion state */
+    }
+    .futuristic-scrollbar::-webkit-scrollbar {
+      width: 8px;
+      height: 8px;
+    }
+    .futuristic-scrollbar::-webkit-scrollbar-track {
+      background: var(--futuristic-scrollbar-track);
+      border-radius: 10px;
+    }
+    .futuristic-scrollbar::-webkit-scrollbar-thumb {
+      background: var(--futuristic-scrollbar-thumb);
+      border-radius: 10px;
+    }
+    .futuristic-scrollbar::-webkit-scrollbar-thumb:hover {
+      background: var(--futuristic-scrollbar-thumb-hover);
+    }
+    /* For Recharts Tooltip - These will be overridden by component props if needed */
+    .recharts-default-tooltip {
+        /* background-color: rgba(30, 41, 59, 0.9); controlled by component */
+        /* border: 1px solid #8B5CF6; controlled by component */
+        border-radius: 8px;
+        box-shadow: 0 0 10px rgba(139, 92, 246, 0.5); /* Example glow */
+    }
+    .recharts-tooltip-label {
+        /* color: #00D4FF; controlled by component */
+        font-weight: bold;
+    }
+    .recharts-tooltip-item-list .recharts-tooltip-item {
+        /* color: #E0E0E0; controlled by component */
+    }
+
+    /* Reduce Motion Styles */
+    body.no-motion .animate-pulse-fast,
+    body.no-motion .animate-slide-in,
+    body.no-motion .animate-fade-in,
+    body.no-motion .animate-dock-item-float {
+      animation: none !important;
+    }
+    body.no-motion * {
+      /* Be careful with overly broad selectors like this for transitions */
+      /* Consider applying no-motion classes more specifically if issues arise */
+      transition-property: none !important;
+      /* transform: none !important; /* This might be too aggressive for layout transforms */
+    }
+    body.no-motion .transition-all,
+    body.no-motion .transition,
+    body.no-motion .transition-transform,
+    body.no-motion .transition-opacity,
+    body.no-motion .transition-colors {
+        transition-duration: 0ms !important;
+        transition-delay: 0ms !important;
+    }
+  </style>
+<script type="importmap">
+{
+  "imports": {
+    "@google/genai": "https://esm.sh/@google/genai@^1.4.0",
+    "react-dom/": "https://esm.sh/react-dom@^19.1.0/",
+    "react-router-dom": "https://esm.sh/react-router-dom@^7.6.2",
+    "react/": "https://esm.sh/react@^19.1.0/",
+    "react": "https://esm.sh/react@^19.1.0",
+    "lucide-react": "https://esm.sh/lucide-react@^0.514.0",
+    "react-markdown": "https://esm.sh/react-markdown@^10.1.0",
+    "recharts/": "https://esm.sh/recharts@^2.15.3/",
+    "recharts": "https://esm.sh/recharts@^2.15.3",
+    "remark-gfm": "https://esm.sh/remark-gfm@^4.0.1",
+    "hast": "https://esm.sh/hast@^1.0.0",
+    "xlsx": "https://esm.sh/xlsx@^0.18.5",
+    "react-dropzone": "https://esm.sh/react-dropzone@^14.3.8",
+    "jspdf": "https://esm.sh/jspdf@^2.5.1",
+    "pptxgenjs": "https://esm.sh/pptxgenjs@^3.12.0",
+    "marked": "https://esm.sh/marked@^5.0.0"
+  }
+}
+</script>
+<link rel="stylesheet" href="/index.css">
+</head>
+<body>
+  <noscript>You need to enable JavaScript to run this app.</noscript>
+  <div id="root"></div>
+  <script type="module" src="/index.tsx"></script>
+</body>
+</html>

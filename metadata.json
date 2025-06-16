@@ -1,0 +1,8 @@
+{
+  "name": "MasYunAI Data Connectivity",
+  "description": "An interactive data connectivity and visualization platform with AI-powered insights and a futuristic UI. Process and visualize data from various sources, interact with an AI chatbot, and leverage AI for document analysis.",
+  "requestFramePermissions": [
+    "camera"
+  ],
+  "prompt": ""
+}
