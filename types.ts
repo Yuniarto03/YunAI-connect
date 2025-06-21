@@ -6,7 +6,7 @@ export type { FileWithPath };
 // Import MilestoneCategoryKey from its definition file
 // Assuming MilestoneNode.tsx is in ./components/
 // This import path is relative to types.ts
-import type { MilestoneCategoryKey as ImportedMilestoneCategoryKey } from './components/MilestoneNode'; 
+import type { MilestoneCategoryKey as ImportedMilestoneCategoryKey } from './components/MilestoneNode';
 // Re-export it for use in other files that import from types.ts
 export type MilestoneCategoryKey = ImportedMilestoneCategoryKey;
 
@@ -46,15 +46,6 @@ declare global {
   interface Window {
     showOpenFilePicker?(options?: OpenFilePickerOptions): Promise<FileSystemFileHandle[]>;
   }
-  // Other FS Access API interfaces might need to be declared if not available
-  // type FileSystemHandleKind = 'file' | 'directory';
-  // interface FileSystemHandle {
-  //   kind: FileSystemHandleKind;
-  //   name: string;
-  //   isSameEntry(other: FileSystemHandle): Promise<boolean>;
-  //   queryPermission(descriptor?: FileSystemHandlePermissionDescriptor): Promise<PermissionState>;
-  //   requestPermission(descriptor?: FileSystemHandlePermissionDescriptor): Promise<PermissionState>;
-  // }
 }
 
 export interface OpenFilePickerOptions {
@@ -84,6 +75,11 @@ export type DataRow = {
   [key: string]: string | number | boolean | null | undefined; // Allow __ROW_ID__ plus other string keys
 };
 
+// Serializable version of DataSourceOrigin for localStorage
+export type SerializableDataSourceOrigin =
+  | { type: 'local'; fileInfo: { name: string; type: string; size: number; path?: string }; isLive?: boolean; } // handle is omitted
+  | { type: 'cloud'; url: string; };
+
 export type DataSourceOrigin =
   | { type: 'local'; file: FileWithPath; handle?: FileSystemFileHandle | null; isLive?: boolean; }
   | { type: 'cloud'; url: string; };
@@ -93,8 +89,14 @@ export type ProcessedData = {
   sheetName?: string;
   data: DataRow[];
   headers: string[];
-  origin?: DataSourceOrigin; // Added to track data source
+  origin?: DataSourceOrigin;
 };
+
+// Version of ProcessedData for serialization (localStorage)
+export type SerializableProcessedData = Omit<ProcessedData, 'origin'> & {
+  origin?: SerializableDataSourceOrigin;
+};
+
 
 export interface SavedFileEntry extends ProcessedData {
   id: string;
@@ -141,13 +143,13 @@ export interface ChartConfig {
   secondaryYAxisAggregation?: AggregationType;
   secondaryYAxisColor?: string;
 
-  // Filter Pair 1
+  // Filter Pair 1 (Local to chart, applied on top of globallyFilteredData)
   filter1Header?: string;
   filter1Value?: string;
   filter1SubHeader?: string;
   filter1SubValue?: string;
 
-  // Filter Pair 2
+  // Filter Pair 2 (Local to chart)
   filter2Header?: string;
   filter2Value?: string;
   filter2SubHeader?: string;
@@ -162,92 +164,87 @@ export enum AggregationType {
   MAX = 'max',
   UNIQUE_COUNT = 'unique_count',
   STDEV = 'stdev',
-  COUNT_NON_EMPTY = 'count_non_empty', // New aggregation type
+  COUNT_NON_EMPTY = 'count_non_empty',
 }
 
-// User-facing output type hints for generation, influencing AI prompt and expected output structure
-export type AiOutputTypeHint = 
-  | 'text'                 // Plain text output
-  | 'msword'               // AI generates content suitable for direct .docx conversion
-  | 'pdf'                  // AI generates content suitable for direct .pdf conversion
-  | 'pptx'                 // AI generates content suitable for direct .pptx conversion (e.g., JSON slide data)
-  | 'json'                 // AI generates JSON array of objects (for table data)
-  | 'xlsx'                 // AI generates JSON array of objects (for table data), client converts to XLSX
-  | 'png'                  // AI generates an image
-  | 'combined_text_table_image'; // AI generates a JSON object with text, table data, and image prompt
+export type AiOutputTypeHint =
+  | 'text'
+  | 'msword'
+  | 'pdf'
+  | 'pptx'
+  | 'json'
+  | 'xlsx'
+  | 'png'
+  | 'combined_text_table_image';
 
 
-// --- Enhanced PPTX Data Structures ---
 export type PptxSlideElementType = 'title' | 'subtitle' | 'paragraph' | 'bulletList' | 'imagePlaceholder';
-export type PptxLayoutType = 
-  | 'TITLE_SLIDE'       // Standard title slide (title and subtitle)
-  | 'TITLE_AND_CONTENT' // Title and a main content body
-  | 'SECTION_HEADER'    // Typically a title and a smaller subtitle, often centered or distinctively styled
-  | 'TWO_CONTENT'       // Title and two content columns
-  | 'COMPARISON'        // Similar to two_content, but for comparing items
-  | 'TITLE_ONLY'        // Only a title placeholder
-  | 'BLANK'             // Blank slide
-  | 'CONTENT_WITH_CAPTION' // Content area and a caption area
-  | 'PICTURE_WITH_CAPTION'; // Picture placeholder and a caption area
+export type PptxLayoutType =
+  | 'TITLE_SLIDE'
+  | 'TITLE_AND_CONTENT'
+  | 'SECTION_HEADER'
+  | 'TWO_CONTENT'
+  | 'COMPARISON'
+  | 'TITLE_ONLY'
+  | 'BLANK'
+  | 'CONTENT_WITH_CAPTION'
+  | 'PICTURE_WITH_CAPTION';
 
 export interface PptxSlideElement {
   type: PptxSlideElementType;
-  text?: string;             // For title, subtitle, paragraph, imagePlaceholder (prompt)
-  items?: string[];          // For bulletList
-  x?: number | string;       // Optional: position (inches or percentage string e.g., '50%')
+  text?: string;
+  items?: string[];
+  x?: number | string;
   y?: number | string;
-  w?: number | string;       // Optional: size
+  w?: number | string;
   h?: number | string;
-  options?: Record<string, any>; // For PptxGenJS specific text options like fontSize, color, bold etc.
+  options?: Record<string, any>;
 }
 
 export interface PptxSlideData {
-  layout?: PptxLayoutType; // Suggests a PptxGenJS master slide or a custom layout handling
-  title?: string;          // Optional top-level title, might be handled by an element too
-  subtitle?: string;       // Optional top-level subtitle
+  layout?: PptxLayoutType;
+  title?: string;
+  subtitle?: string;
   elements?: PptxSlideElement[];
-  notes?: string;          // Speaker notes
-  backgroundColor?: string; // Optional slide background color (hex)
+  notes?: string;
+  backgroundColor?: string;
 }
 
 export interface PptxThemeSuggestion {
-  primaryColor?: string;   // Hex color (e.g., '#FF0000')
-  secondaryColor?: string; // Hex color
-  bodyTextColor?: string;  // Hex color
+  primaryColor?: string;
+  secondaryColor?: string;
+  bodyTextColor?: string;
   fontFamily?: string;
   author?: string;
   company?: string;
-  title?: string; // Presentation title
+  title?: string;
 }
 
 export interface PptxJsonData {
   theme?: PptxThemeSuggestion;
   slides: PptxSlideData[];
 }
-// --- End of Enhanced PPTX Data Structures ---
 
 
 export interface AiDocumentRequest {
   file?: FileWithPath;
   textInstruction: string;
-  // outputTypeHint is part of the AiDocument component's state, using AiOutputTypeHint
 }
 
 export interface CombinedAiOutput {
-  textPart: string | null; // Could be Markdown, plain text, or JSON string for PPTX
+  textPart: string | null;
   tablePart: DataRow[] | null;
-  imagePart: string | null; // base64 image string
-  imageDescription?: string; // Description used for generating the image
+  imagePart: string | null;
+  imageDescription?: string;
 }
 
-// Internal response types from the AI service, which the UI then processes
 export type AiServiceResponseType = 'text' | 'table' | 'image' | 'combined' | 'error';
 
 export interface AiDocumentResponse {
   type: AiServiceResponseType;
-  content: string | DataRow[] | CombinedAiOutput | null; // string for text/error/image (base64), DataRow[] for table, CombinedAiOutput for combined
-  fileName?: string; // For table output or image output
-  originalUserHint?: AiOutputTypeHint; // Store the user's original hint for download logic
+  content: string | DataRow[] | CombinedAiOutput | null;
+  fileName?: string;
+  originalUserHint?: AiOutputTypeHint;
 }
 
 
@@ -256,44 +253,30 @@ export enum ThemeName {
   MATRIX_CORE = 'Matrix Core',
   TECH_SUNSET = 'Tech Sunset',
   VOID_PULSE = 'Void Pulse',
-  GALACTIC_DAWN = 'Galactic Dawn',
-  SILVER_TECH = 'Silver Tech',
-  PURE_LIGHT = 'Pure Light',
-  PURE_DARK = 'Pure Dark',
-  SYSTEM_DEFAULT = 'System Default',
+  GALACTIC_DAWN = 'Galactic Dawn',    // Fixed and added
+  SILVER_TECH = 'Silver Tech',        // Added
+  PURE_LIGHT = 'Pure Light',          // Added
+  PURE_DARK = 'Pure Dark',            // Added
+  SYSTEM_DEFAULT = 'System Default'   // Added
 }
 
+// ---- START OF ADDED/COMPLETED TYPE DEFINITIONS ----
 export interface Theme {
   name: ThemeName;
-  sidebarBg: string; // Retained for themes that might use it elsewhere, but Dock won't use it directly
+  sidebarBg: string;
   contentBg: string;
-  accent1: string; // color name part, e.g., 'neon-blue'
-  accent2: string; // color name part, e.g., 'cyber-purple'
-  accent3: string; // color name part, e.g., 'matrix-green'
-  accent4: string; // color name part, e.g., 'tech-orange'
-  textColor: string; // full class, e.g., 'text-light-text'
-  borderColor: string; // full class, e.g., 'border-medium-gray'
-  cardBg: string; // full class, e.g., 'bg-dark-gray/70 backdrop-blur-md'
-  mediumGray: string; // color name part, e.g., 'medium-gray'
-  darkGray: string; // color name part, e.g., 'dark-gray'
-  darkBg: string; // color name part, e.g. 'dark-bg' (used for specific dark backgrounds like code blocks)
+  accent1: string;
+  accent2: string;
+  accent3: string;
+  accent4: string;
+  textColor: string;
+  borderColor: string;
+  cardBg: string;
+  mediumGray: string;
+  darkGray: string;
+  darkBg: string;
 }
 
-export interface FilterState {
-  [header: string]: string[]; // Selected values for each header
-}
-
-// Gemini specific types, ensure these are compatible with actual API responses
-export interface GeminiGenerateContentResponse {
-  text: string; // Simplified for now, actual response is more complex
-  candidates?: [{
-    groundingMetadata?: {
-      groundingChunks?: GroundingChunk[];
-    }
-  }];
-}
-
-// Table specific preferences
 export enum TableThemeName {
   DEFAULT_DARK = 'Default Dark',
   OCEAN_BLUE = 'Ocean Blue',
@@ -311,20 +294,20 @@ export enum TableThemeName {
 
 export interface TableTheme {
   name: TableThemeName;
-  tableBg: string; // e.g., 'bg-gray-800'
-  headerBg: string; // e.g., 'bg-gray-700'
-  headerColor: string; // e.g., 'text-white'
-  rowBg: string; // e.g., 'bg-gray-800'
-  rowAltBg?: string; // e.g., 'bg-gray-750' for striped rows
-  textColor: string; // e.g., 'text-gray-200'
-  borderColor: string; // e.g., 'border-gray-600'
-  highlightRowBg: string; // For search highlight
-  rowHoverBg: string; // Hover background for rows
-  filterIconColor: string; // Color for the filter icon in header
-  filterDropdownBg: string; // Background for filter dropdown
-  filterDropdownBorder: string; // Border for filter dropdown
-  filterDropdownText: string; // Text color for filter dropdown items
-  filterDropdownHoverBg: string; // Hover BG for filter dropdown items
+  tableBg: string;
+  headerBg: string;
+  headerColor: string;
+  rowBg: string;
+  rowAltBg: string;
+  textColor: string;
+  borderColor: string;
+  highlightRowBg: string;
+  rowHoverBg: string;
+  filterIconColor: string;
+  filterDropdownBg: string;
+  filterDropdownBorder: string;
+  filterDropdownText: string;
+  filterDropdownHoverBg: string;
 }
 
 export interface TableFontOption {
@@ -337,72 +320,32 @@ export interface TableFontSizeOption {
   cssClass: string;
 }
 
-// Pivot Table Specific Types
 export interface PivotFieldConfig {
   field: string;
-  // Additional config for values, e.g., specific aggregation if different from default
-  aggregation?: AggregationType;
 }
 
-export interface PivotValueFieldConfig extends PivotFieldConfig {
+export interface PivotValueFieldConfig {
+  field: string;
   aggregation: AggregationType;
 }
 
 export interface CalculatedMeasureConfig {
-  id: string; // Unique ID for UI management
-  name: string; // User-defined name for the measure
-  formula: string; // The formula string
+  id: string;
+  name: string;
+  formula: string;
+}
+
+export interface PivotFilterConfig {
+  field: string;
+  selectedValues: string[];
 }
 
 export interface PivotConfig {
   rows: PivotFieldConfig[];
   columns: PivotFieldConfig[];
   values: PivotValueFieldConfig[];
-  filters: Array<{ field: string; selectedValues: string[] }>; // Pre-pivot filters
-  calculatedMeasures?: CalculatedMeasureConfig[]; // Array of calculated measures
-}
-
-export interface PivotDataCell {
-  [valueFieldNamePlusAggregationOrCalcMeasureName: string]: number | null | undefined;
-}
-
-export interface PivotRowHeader {
-  key: string; // Unique key for this row header, e.g., "Country|USA"
-  label: string;
-  level: number;
-  children?: PivotRowHeader[];
-  isSubtotal?: boolean;
-  isGrandTotal?: boolean;
-  data?: Record<string, PivotDataCell>; // Data for this row, keyed by column keys
-  originalValues?: Record<string, string|number|boolean|null>; // The values that define this row
-}
-
-export interface PivotColumnHeader {
-  key: string; // Unique key, e.g., "Category|Electronics"
-  label: string;
-  level: number;
-  children?: PivotColumnHeader[];
-  isSubtotal?: boolean;
-  isGrandTotal?: boolean;
-  originalValues?: Record<string, string|number|boolean|null>; // The values that define this column
-}
-
-export interface PivotResult {
-  rowHeadersTree: PivotRowHeader[];
-  columnHeadersTree: PivotColumnHeader[];
-  dataMatrix: Map<string, Map<string, PivotDataCell>>; // Map<rowKey, Map<colKey, values>>
-  allRowKeys: string[]; // Flat list of all displayable row keys (for rendering order)
-  allColumnKeys: string[]; // Flat list of all displayable col keys
-  rowGrandTotal?: Record<string, PivotDataCell>; // For column grand totals at the bottom
-}
-
-export type PivotArea = 'rows' | 'columns' | 'values' | 'filters' | 'available';
-
-export interface DraggedPivotField {
-  field: string;
-  fromArea: PivotArea;
-  fromIndex?: number; // Optional, if reordering within an area
-  isCalculatedMeasure?: boolean; // To distinguish calculated measures in drag/drop if needed
+  filters: PivotFilterConfig[];
+  calculatedMeasures?: CalculatedMeasureConfig[];
 }
 
 export interface PivotOptions {
@@ -414,53 +357,6 @@ export interface PivotOptions {
   defaultColumnSubtotalsCollapsed: boolean;
 }
 
-// Saved Pivot Summaries
-export interface SavedPivotSummary {
-  id: string;
-  name: string;
-  createdAt: string; // ISO string
-  associatedDataIdentifier: string; // To link with specific dataset
-  pivotConfig: PivotConfig;
-  pivotOptions: PivotOptions;
-}
-
-// Active Pivot View (for displaying multiple pivot tables)
-export interface ActivePivotView {
-  id: string; // Unique ID for this active instance
-  name: string; // Display name, e.g., "Sales by Region" or "Unsaved View 1"
-  pivotConfig: PivotConfig;
-  pivotOptions: PivotOptions;
-  pivotResult: PivotResult | null;
-  pivotExpandedKeys: Set<string>;
-  // Optional: to show config panel for this specific view, or manage its chart, etc.
-  // isEditing?: boolean; 
-  // chartConfig?: PivotChartConfig; // If each pivot view can have its own chart settings
-}
-
-// MaximizedPivotViewModalProps for PivotTable.tsx
-export interface MaximizedPivotViewModalProps {
-  view: ActivePivotView;
-  onClose: () => void;
-  theme: Theme;
-  reduceMotion: boolean; // Added reduceMotion
-  maximizedViewRef: React.RefObject<HTMLDivElement>;
-  maximizedViewPosition: { x: number; y: number };
-  handleMaximizedViewDragMouseDown: (e: React.MouseEvent<HTMLDivElement>) => void;
-  renderActualPivotTable: Function; // Consider more specific type if possible
-  getRenderableRowNodes: Function;
-  getLeafColNodesForData: Function;
-  toggleExpand: Function;
-  handleCollapseAll: Function;
-  handleExpandAll: Function;
-  exportPivotToExcel: Function; // Consider more specific type (AppContextType['exportPivotToExcel'])
-  setChartModalViewId: Function; // (viewId: string | null) => void
-  setShowDisplayOptionsModalForViewId: Function; // (viewId: string | null) => void
-  isPivotPresentationViewActive: boolean;
-  calculatePivotForView: (view: ActivePivotView | undefined) => void; 
-}
-
-
-// New Settings Types
 export type ExportFormat = 'xlsx' | 'csv' | 'json';
 
 export interface ExportFormatOption {
@@ -468,125 +364,32 @@ export interface ExportFormatOption {
   label: string;
 }
 
-// Saved Data Table View Configuration
+export type LatLngTuple = [number, number];
+
+export interface CountryInfo {
+  name: string;
+  code: string;
+  center: LatLngTuple;
+  zoom: number;
+}
+
 export interface DataTableViewConfig {
   id: string;
   name: string;
-  createdAt: string; // ISO string
-  associatedDataIdentifier: string; // To link view with specific dataset
-  // Table state
+  createdAt: string;
+  associatedDataIdentifier: string; // To link view to specific processedData instance
   searchTerm: string;
-  activeFilters: FilterState;
-  itemsPerPage: number;
+  // activeFilters: FilterState; // This will be handled globally
   visibleColumns: Record<string, boolean>;
-  // Table appearance
   tableFont: string;
   tableFontSize: string;
   tableThemeName: TableThemeName;
-  // Optional: columnOrder: string[];
+  itemsPerPage: number;
 }
 
-// FilterSlot for global filters
-export interface FilterSlot {
-  header?: string;
-  value?: string;
-}
+export type FilterState = Record<string, string[]>; // Header -> selected values
 
-
-export interface AppContextType {
-  theme: Theme;
-  setTheme: (themeName: ThemeName) => void;
-  availableThemes: Record<ThemeName, Theme>;
-
-  processedData: ProcessedData | null;
-  setProcessedData: (
-    data: ProcessedData | null,
-    options?: {
-        overridePivotConfig?: PivotConfig; // For initializing a single pivot view if data comes with one
-        isUserAction?: boolean; 
-    }
-  ) => void;
-
-  savedFiles: SavedFileEntry[];
-  saveFileToLibrary: (fileData: ProcessedData) => void;
-  deleteFileFromLibrary: (fileId: string) => void;
-  loadDataFromLibrary: (fileId: string) => void;
-
-  apiKey: string | null;
-
-  tableFont: string;
-  setTableFont: (fontClass: string) => void;
-  tableFontSize: string;
-  setTableFontSize: (sizeClass: string) => void;
-  tableTheme: TableTheme;
-  setTableTheme: (themeName: TableThemeName) => void;
-  availableTableThemes: Record<TableThemeName, TableTheme>;
-  tableFontOptions: TableFontOption[];
-  tableFontSizeOptions: TableFontSizeOption[];
-
-  chartConfigs: ChartConfig[];
-  setChartConfigs: React.Dispatch<React.SetStateAction<ChartConfig[]>>;
-
-  // Multiple Active Pivot Views
-  activePivotViews: ActivePivotView[];
-  currentEditingPivotViewId: string | null;
-  addActivePivotView: (config?: PivotConfig, options?: PivotOptions, name?: string, id?: string) => string; // Returns new viewId
-  removeActivePivotView: (viewId: string) => void;
-  updateActivePivotViewConfig: (viewId: string, newConfig: PivotConfig) => void;
-  updateActivePivotViewOptions: (viewId: string, newOptions: PivotOptions) => void;
-  updateActivePivotViewExpandedKeys: (viewId: string, newKeys: Set<string>) => void;
-  updateActivePivotViewName: (viewId: string, newName: string) => void;
-  setActiveEditingPivotViewId: (viewId: string | null) => void;
-  updateActivePivotViewResult: (viewId: string, result: PivotResult | null) => void;
-
-  pivotAvailableFieldsFilter: string; // This can remain global for the config panel
-  setPivotAvailableFieldsFilter: React.Dispatch<React.SetStateAction<string>>;
-  pivotDataIdentifier: string | null; 
-
-  isSidebarOpen: false; 
-  toggleSidebar: () => void;
-  setIsSidebarOpen: (value: React.SetStateAction<boolean>) => void;
-
-
-  enableNotifications: boolean;
-  setEnableNotifications: React.Dispatch<React.SetStateAction<boolean>>;
-  defaultExportFormat: ExportFormat;
-  setDefaultExportFormat: React.Dispatch<React.SetStateAction<ExportFormat>>;
-  autoProfileOnLoad: boolean;
-  setAutoProfileOnLoad: React.Dispatch<React.SetStateAction<boolean>>;
-  reduceMotion: boolean;
-  setReduceMotion: React.Dispatch<React.SetStateAction<boolean>>;
-
-  // Saved Data Table Views
-  savedDataTableViews: DataTableViewConfig[];
-  saveDataTableView: (viewConfig: Omit<DataTableViewConfig, 'id' | 'createdAt'>) => void;
-  loadDataTableView: (viewId: string) => DataTableViewConfig | undefined;
-  deleteDataTableView: (viewId: string) => void;
-
-  // Saved Pivot Summaries (these are templates, distinct from activePivotViews)
-  savedPivotSummaries: SavedPivotSummary[];
-  savePivotSummary: (summary: Omit<SavedPivotSummary, 'id' | 'createdAt'>) => void; // To save the currently configured/editing pivot
-  deletePivotSummary: (summaryId: string) => void;
-  // loadPivotSummary (for loading into active config) is effectively replaced by addActivePivotView with summary's config
-
-  // Data Table Undo/Redo
-  dataTableHistory: ProcessedData[];
-  dataTableHistoryIndex: number;
-  undoDataTableChange: () => void;
-  redoDataTableChange: () => void;
-  canUndoDataTable: boolean;
-  canRedoDataTable: boolean;
-
-  // Pivot Table specific function for exporting, defined in AppContext
-  exportPivotToExcel: (pivotResult: PivotResult, config: PivotConfig, options: PivotOptions, themeCardBg: string) => void;
-
-  // State for PivotTable filter dropdowns
-  openFilterValueDropdown: {viewId: string, field: string} | null;
-  setOpenFilterValueDropdown: React.Dispatch<React.SetStateAction<{viewId: string, field: string} | null>>;
-}
-
-// DataSummary Types
-export type ColumnType = 'numeric' | 'string' | 'boolean' | 'mixed' | 'empty';
+export type ColumnType = 'numeric' | 'string' | 'boolean' | 'date' | 'mixed' | 'empty';
 
 export interface NumericStats {
   min?: number;
@@ -595,11 +398,13 @@ export interface NumericStats {
   median?: number;
   stdDev?: number;
   sum?: number;
+  histogramBins?: { name: string, value: number }[];
 }
 
 export interface CategoricalStats {
   mostFrequent: { value: string; count: number }[];
   leastFrequent: { value: string; count: number }[];
+  topNCategorical?: { name: string, value: number }[];
 }
 
 export interface ColumnSummary extends NumericStats, CategoricalStats {
@@ -609,21 +414,249 @@ export interface ColumnSummary extends NumericStats, CategoricalStats {
   missingCount: number;
   missingPercentage: number;
   uniqueCount: number;
-  histogramBins?: { name: string; value: number }[]; // For numeric column mini-histograms
-  topNCategorical?: { name: string; value: number }[]; // For categorical column mini-bar charts
 }
 
-// Milestone Planner Specific Types
+export interface SubTask {
+  id: string;
+  text: string;
+  completed: boolean;
+}
+
 export interface Milestone {
   id: string;
-  date: string; // Stored as YYYY-MM-DD string for simplicity, can be parsed to Date object when needed
+  date: string; 
   title: string;
   description?: string;
-  value?: string; // For any metric or value associated with the milestone
-  source: 'manual' | 'uploaded'; // To distinguish origin
-  category?: MilestoneCategoryKey; 
-  durationFromPrevious?: string; 
-  durationFromStart?: string; 
+  value?: string | number;
+  category?: MilestoneCategoryKey;
+  source: 'manual' | 'uploaded';
+  durationFromPrevious?: string;
+  durationFromStart?: string;
+  subTasks?: SubTask[];
 }
 
 export type MilestoneOutputType = 'csv' | 'json' | 'text' | 'ai_report';
+
+
+export interface AiUiPayload {
+  value?: string;
+  dataTableAction?: string;
+  searchTerm?: string;
+  path?: string;
+  appActionType?: string;
+  sessionName?: string;
+}
+
+export interface AiUiCommandResponse {
+  actionType: 'theme' | 'tableFont' | 'tableFontSize' | 'dataTable' | 'navigation' | 'appAction' | 'error' | 'unknown';
+  payload?: AiUiPayload;
+  message?: string;
+}
+
+
+export interface PivotRowHeader {
+  key: string;
+  label: string;
+  level: number;
+  children?: PivotRowHeader[];
+  isSubtotal?: boolean;
+  isGrandTotal?: boolean;
+  originalValues?: Record<string, any>;
+}
+
+export interface PivotColumnHeader {
+  key: string;
+  label: string;
+  level: number;
+  children?: PivotColumnHeader[];
+  isSubtotal?: boolean;
+  isGrandTotal?: boolean;
+  originalValues?: Record<string, any>;
+}
+
+export type PivotDataCell = Record<string, number | string | null>;
+
+export interface PivotResult {
+  rowHeadersTree: PivotRowHeader[];
+  columnHeadersTree: PivotColumnHeader[];
+  dataMatrix: Map<string, Map<string, PivotDataCell>>;
+  allRowKeys: string[];
+  allColumnKeys: string[];
+}
+
+export type PivotArea = 'rows' | 'columns' | 'values' | 'filters' | 'available';
+
+export interface DraggedPivotField {
+  field: string;
+  fromArea: PivotArea;
+  fromIndex?: number;
+  isCalculatedMeasure?: boolean;
+}
+
+export interface SavedPivotSummary {
+  id: string;
+  name: string;
+  createdAt: string;
+  associatedDataIdentifier: string;
+  pivotConfig: PivotConfig;
+  pivotOptions: PivotOptions;
+}
+
+export interface ActivePivotView {
+  id: string;
+  name: string;
+  pivotConfig: PivotConfig;
+  pivotOptions: PivotOptions;
+  pivotResult: PivotResult | null;
+  pivotExpandedKeys: Set<string>;
+}
+
+export interface AppSession {
+  id: string;
+  name: string;
+  createdAt: string;
+  currentPath: string;
+  processedData: SerializableProcessedData | null;
+  pivotDataIdentifier: string | null;
+  userSelectedThemeName: ThemeName;
+  tableFont: string;
+  tableFontSize: string;
+  tableThemeName: TableThemeName;
+  reduceMotion: boolean;
+  chartConfigs: ChartConfig[];
+  activePivotViews: ActivePivotView[];
+  currentEditingPivotViewId: string | null;
+  pivotAvailableFieldsFilter: string;
+  openFilterValueDropdown: {viewId: string, field: string} | null;
+  enableNotifications: boolean;
+  defaultExportFormat: ExportFormat;
+  autoProfileOnLoad: boolean;
+  dataTableState?: { // Preserved for potential AI specific use
+    searchTerm: string | null; 
+  };
+  globalActiveFilters: FilterState; // Added for global filters
+}
+
+export type UnifiedMeasureConfigForExport =
+  | (PivotValueFieldConfig & { isCalculated: false })
+  | (CalculatedMeasureConfig & { isCalculated: true; aggregation: 'Calculated' });
+
+export interface RouteCalculation {
+  id: string;
+  locationAInput: string;
+  locationBInput: string;
+  result: RouteResult | null;
+  color: string;
+  aiRouteAnalysis?: string | null;
+  isAiRouteAnalysisLoading?: boolean;
+}
+
+export interface RouteResult {
+  distance: string | null;
+  duration: string | null;
+  estimatedDurationHours?: string | null;
+  error: string | null;
+  calculationType: 'haversine' | 'geocoded_haversine' | 'api_directions' | null;
+  status: 'pending' | 'success' | 'error_geocoding_A' | 'error_geocoding_B' | 'error_both_geocoding' | 'error_calculation' | 'error_api';
+  fromLocation?: string;
+  toLocation?: string;
+  calculatedAt?: string;
+  message?: string;
+  originalInputA?: string;
+  originalInputB?: string;
+}
+
+export interface BulkRouteResultItem extends RouteResult {
+  id: string;
+  originalInputA: string;
+  originalInputB: string;
+}
+
+export interface FilterSlot { // Used for DataSummary and DashboardReport global filter UI
+  header?: string;
+  value?: string;
+}
+
+export interface AppContextType {
+  theme: Theme;
+  setTheme: (themeName: ThemeName) => void;
+  availableThemes: Record<ThemeName, Theme>;
+  processedData: ProcessedData | null;
+  setProcessedData: (data: ProcessedData | null, options?: { overridePivotConfig?: PivotConfig; isUserAction?: boolean; isSessionLoad?: boolean; }) => void;
+  savedFiles: SavedFileEntry[];
+  saveFileToLibrary: (fileData: ProcessedData) => void;
+  deleteFileFromLibrary: (fileId: string) => void;
+  loadDataFromLibrary: (fileId: string) => void;
+  apiKey: string | null;
+  tableFont: string;
+  setTableFont: (fontClass: string) => void;
+  tableFontSize: string;
+  setTableFontSize: (sizeClass: string) => void;
+  tableTheme: TableTheme;
+  setTableTheme: (themeName: TableThemeName) => void;
+  availableTableThemes: Record<TableThemeName, TableTheme>;
+  tableFontOptions: TableFontOption[];
+  tableFontSizeOptions: TableFontSizeOption[];
+  chartConfigs: ChartConfig[];
+  setChartConfigs: React.Dispatch<React.SetStateAction<ChartConfig[]>>;
+  
+  activePivotViews: ActivePivotView[];
+  currentEditingPivotViewId: string | null;
+  addActivePivotView: (config?: PivotConfig, options?: PivotOptions, name?: string, id?: string) => string;
+  removeActivePivotView: (viewId: string) => void;
+  updateActivePivotViewConfig: (viewId: string, newConfig: PivotConfig) => void;
+  updateActivePivotViewOptions: (viewId: string, newOptions: PivotOptions) => void;
+  updateActivePivotViewExpandedKeys: (viewId: string, newKeys: Set<string>) => void;
+  updateActivePivotViewName: (viewId: string, newName: string) => void;
+  setActiveEditingPivotViewId: (viewId: string | null) => void;
+  updateActivePivotViewResult: (viewId: string, result: PivotResult | null) => void;
+
+  pivotAvailableFieldsFilter: string;
+  setPivotAvailableFieldsFilter: React.Dispatch<React.SetStateAction<string>>;
+  pivotDataIdentifier: string | null;
+  
+  dataTableSearchTermFromAI: string | null; // Kept for specific AI interaction
+  setDataTableSearchTermFromAI: (searchTerm: string | null) => void;
+
+  enableNotifications: boolean;
+  setEnableNotifications: (value: boolean | ((prevState: boolean) => boolean)) => void;
+  defaultExportFormat: ExportFormat;
+  setDefaultExportFormat: (value: ExportFormat | ((prevState: ExportFormat) => ExportFormat)) => void;
+  autoProfileOnLoad: boolean;
+  setAutoProfileOnLoad: (value: boolean | ((prevState: boolean) => boolean)) => void;
+  reduceMotion: boolean;
+  setReduceMotion: (value: boolean | ((prevState: boolean) => boolean)) => void;
+
+  savedDataTableViews: DataTableViewConfig[];
+  saveDataTableView: (viewConfig: Omit<DataTableViewConfig, 'id' | 'createdAt'>) => void;
+  loadDataTableView: (viewId: string) => DataTableViewConfig | undefined;
+  deleteDataTableView: (viewId: string) => void;
+
+  savedPivotSummaries: SavedPivotSummary[];
+  savePivotSummary: (summary: Omit<SavedPivotSummary, 'id' | 'createdAt'>) => void;
+  deletePivotSummary: (summaryId: string) => void;
+
+  dataTableHistory: SerializableProcessedData[];
+  dataTableHistoryIndex: number;
+  undoDataTableChange: () => void;
+  redoDataTableChange: () => void;
+  canUndoDataTable: boolean;
+  canRedoDataTable: boolean;
+  exportPivotToExcel: (pivotResult: PivotResult, config: PivotConfig, options: PivotOptions, themeCardBg: string) => void;
+  openFilterValueDropdown: {viewId: string, field: string} | null;
+  setOpenFilterValueDropdown: React.Dispatch<React.SetStateAction<{viewId: string, field: string} | null>>;
+  
+  appSessions: AppSession[];
+  currentSessionName: string | null;
+  saveAppSession: (name: string, currentPath: string) => string;
+  loadAppSession: (sessionId: string) => string | undefined; 
+  deleteAppSession: (sessionId: string) => void;
+  setCurrentSessionName: React.Dispatch<React.SetStateAction<string | null>>;
+
+  // Global Filtering State
+  globalActiveFilters: FilterState;
+  setGlobalActiveFilters: React.Dispatch<React.SetStateAction<FilterState>>;
+  globallyFilteredData: DataRow[] | null;
+}
+
+// ---- END OF ADDED/COMPLETED TYPE DEFINITIONS ----

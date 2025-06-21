@@ -6,6 +6,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Lovable AI Data Analyst</title>
   <script src="https://cdn.tailwindcss.com"></script>
+  
   <script>
     // Ensure process.env and API_KEY handling aligns with hosting best practices.
     // The application relies on the hosting environment to set process.env.API_KEY.
@@ -71,12 +72,21 @@
             'neon-glow-tech-orange': '0 0 5px #FF6B35, 0 0 10px #FF6B35, 0 0 15px #FF6B35',
             'emboss': 'inset 2px 2px 5px rgba(0,0,0,0.5), inset -2px -2px 5px rgba(255,255,255,0.2)',
             'emboss-dark': 'inset 3px 3px 6px #05070c, inset -3px -3px 6px #1f2b40',
+            'lifted-3d-neon-blue': '0px 10px 20px -5px rgba(0, 212, 255, 0.3), 0px 5px 10px -3px rgba(0, 212, 255, 0.2), 0 0 30px 5px rgba(0, 212, 255, 0.15)',
+            'lifted-3d-cyber-purple': '0px 10px 20px -5px rgba(139, 92, 246, 0.3), 0px 5px 10px -3px rgba(139, 92, 246, 0.2), 0 0 30px 5px rgba(139, 92, 246, 0.15)',
+            'lifted-3d-matrix-green': '0px 10px 20px -5px rgba(0, 255, 136, 0.3), 0px 5px 10px -3px rgba(0, 255, 136, 0.2), 0 0 30px 5px rgba(0, 255, 136, 0.15)',
+            'lifted-3d-tech-orange': '0px 10px 20px -5px rgba(255, 107, 53, 0.3), 0px 5px 10px -3px rgba(255, 107, 53, 0.2), 0 0 30px 5px rgba(255, 107, 53, 0.15)',
           },
           animation: {
             'pulse-fast': 'pulse 1s cubic-bezier(0.4, 0, 0.6, 1) infinite',
             'slide-in': 'slideIn 0.5s ease-out forwards',
             'fade-in': 'fadeIn 0.5s ease-out forwards',
             'dock-item-float': 'dockItemFloat 6s ease-in-out infinite alternate',
+            'report-title-glow-animation': 'reportTitleGlow 3s ease-in-out infinite alternate',
+            'page-exit-animation': 'pageExit 0.7s ease-in-out forwards',
+            'page-enter-animation': 'pageEnter 0.7s ease-in-out forwards',
+            'grid-exit-animation': 'gridShowAndFade 0.7s ease-in-out forwards',
+            'grid-enter-animation': 'gridFadeInAndHide 0.7s ease-in-out forwards',
           },
           keyframes: {
             pulse: { // Ensure 'pulse' keyframe is defined if 'pulse-fast' uses it
@@ -95,7 +105,31 @@
               '0%': { transform: 'translateY(0px)' },
               '50%': { transform: 'translateY(-3px)' },
               '100%': { transform: 'translateY(0px)' },
-            }
+            },
+            reportTitleGlow: {
+              '0%, 100%': { textShadow: '0 0 5px var(--glow-color-1, #00D4FF), 0 0 10px var(--glow-color-1, #00D4FF), 0 0 15px var(--glow-color-1, #00D4FF), 0 0 20px var(--glow-color-2, #8B5CF6), 0 0 30px var(--glow-color-2, #8B5CF6)' },
+              '50%': { textShadow: '0 0 10px var(--glow-color-1, #00D4FF), 0 0 20px var(--glow-color-1, #00D4FF), 0 0 30px var(--glow-color-1, #00D4FF), 0 0 40px var(--glow-color-2, #8B5CF6), 0 0 50px var(--glow-color-2, #8B5CF6), 0 0 70px var(--glow-color-2, #8B5CF6)' },
+            },
+            pageExit: {
+              '0%': { opacity: '1', transform: 'scale(1) perspective(500px) rotateX(0deg)' },
+              '100%': { opacity: '0', transform: 'scale(0.95) perspective(500px) rotateX(15deg)' },
+            },
+            pageEnter: {
+              '0%': { opacity: '0', transform: 'scale(0.95) perspective(500px) rotateX(-15deg)' },
+              '100%': { opacity: '1', transform: 'scale(1) perspective(0px) rotateX(0deg)' },
+            },
+            gridShowAndFade: { /* For page exit */
+              '0%': { opacity: '0', backgroundSize: 'calc(var(--grid-cell-size, 50px) * 2) calc(var(--grid-cell-size, 50px) * 2)' },
+              '50%': { opacity: '0.3', backgroundSize: 'var(--grid-cell-size, 50px) var(--grid-cell-size, 50px)' },
+              '100%': { opacity: '0', backgroundSize: 'calc(var(--grid-cell-size, 50px) * 0.5) calc(var(--grid-cell-size, 50px) * 0.5)' },
+            },
+            gridFadeInAndHide: { /* For page enter */
+              '0%': { opacity: '0.3', backgroundSize: 'calc(var(--grid-cell-size, 50px) * 0.5) calc(var(--grid-cell-size, 50px) * 0.5)' },
+              '50%': { opacity: '0.15', backgroundSize: 'var(--grid-cell-size, 50px) var(--grid-cell-size, 50px)' },
+              '100%': { opacity: '0', backgroundSize: 'calc(var(--grid-cell-size, 50px) * 2) calc(var(--grid-cell-size, 50px) * 2)' },
+            },
+            simpleFadeIn: { '0%': { opacity: '0' }, '100%': { opacity: '1' } },
+            simpleFadeOut: { '0%': { opacity: '1' }, '100%': { opacity: '0' } },
           }
         },
       },
@@ -107,12 +141,20 @@
       --futuristic-scrollbar-thumb: #8B5CF6; /* Default: cyber-purple */
       --futuristic-scrollbar-thumb-hover: #00D4FF; /* Default: neon-blue */
       --futuristic-scrollbar-track: #1E293B; /* Default: dark-gray */
-      --dock-height: 70px; /* Height of the bottom dock */
+      --dock-height: 60px; /* Reduced from 70px */
+
+      /* Variables for report title glow */
+      --glow-color-1: #00D4FF; /* Default neon-blue */
+      --glow-color-2: #8B5CF6; /* Default cyber-purple */
+
+      /* For Page Transition Grid Overlay */
+      --grid-color: #00D4FF; /* Default grid color, will be overridden by JS */
+      --grid-line-thickness: 1px;
+      --grid-cell-size: 50px;
     }
     body {
       font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      /* background-color and color are set by App.tsx based on theme */
-      /* The 'no-motion' class will be added/removed by App.tsx based on reduceMotion state */
+      perspective: 1200px; /* Added for global 3D perspective */
     }
     .futuristic-scrollbar::-webkit-scrollbar {
       width: 8px;
@@ -129,33 +171,62 @@
     .futuristic-scrollbar::-webkit-scrollbar-thumb:hover {
       background: var(--futuristic-scrollbar-thumb-hover);
     }
-    /* For Recharts Tooltip - These will be overridden by component props if needed */
     .recharts-default-tooltip {
-        /* background-color: rgba(30, 41, 59, 0.9); controlled by component */
-        /* border: 1px solid #8B5CF6; controlled by component */
         border-radius: 8px;
-        box-shadow: 0 0 10px rgba(139, 92, 246, 0.5); /* Example glow */
+        box-shadow: 0 0 10px rgba(139, 92, 246, 0.5);
     }
-    .recharts-tooltip-label {
-        /* color: #00D4FF; controlled by component */
-        font-weight: bold;
+    
+    /* Page Transition Styles */
+    #main-content-area.page-exit-active {
+      animation: pageExit 0.7s ease-in-out forwards;
     }
-    .recharts-tooltip-item-list .recharts-tooltip-item {
-        /* color: #E0E0E0; controlled by component */
+    #main-content-area.page-enter-active {
+      animation: pageEnter 0.7s ease-in-out forwards;
     }
+
+    .page-transition-grid-overlay {
+      position: absolute;
+      top: 0; left: 0; right: 0; bottom: 0;
+      pointer-events: none;
+      z-index: 5; /* Adjust as needed */
+      opacity: 0;
+      background-image:
+        linear-gradient(to right, var(--grid-color) var(--grid-line-thickness), transparent var(--grid-line-thickness)),
+        linear-gradient(to bottom, var(--grid-color) var(--grid-line-thickness), transparent var(--grid-line-thickness));
+      /* animation-timing-function: steps(1, end); */ /* Removed this to allow smooth background-size transition */
+    }
+    .page-transition-grid-overlay.grid-exit-active {
+      animation: gridShowAndFade 0.7s ease-in-out forwards;
+    }
+    .page-transition-grid-overlay.grid-enter-active {
+      animation: gridFadeInAndHide 0.7s ease-in-out forwards;
+    }
+
+    /* 3D Card Interactive Styles */
+    .card-3d-interactive {
+      transform-style: preserve-3d;
+      transition: transform 0.4s cubic-bezier(0.25, 0.8, 0.25, 1), box-shadow 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
+    }
+    .card-3d-interactive:hover {
+      /* Default hover, specific themes might override shadow */
+      transform: perspective(800px) rotateY(5deg) rotateX(2deg) translateZ(30px) scale(1.03);
+      /* Default shadow to be overridden by Tailwind utilities if possible, or use CSS variables here */
+    }
+    /* Use Tailwind for dynamic shadows in the component if possible, otherwise, use CSS variables here */
+    /* Example of how to use variables (if Tailwind classes are insufficient for dynamic accent shadows) */
+    /* .card-3d-interactive:hover { box-shadow: var(--dynamic-3d-shadow, 0 20px 30px -10px rgba(0,0,0,0.3)); } */
+
 
     /* Reduce Motion Styles */
     body.no-motion .animate-pulse-fast,
     body.no-motion .animate-slide-in,
     body.no-motion .animate-fade-in,
-    body.no-motion .animate-dock-item-float {
+    body.no-motion .animate-dock-item-float,
+    body.no-motion .animate-report-title-glow-animation {
       animation: none !important;
     }
     body.no-motion * {
-      /* Be careful with overly broad selectors like this for transitions */
-      /* Consider applying no-motion classes more specifically if issues arise */
       transition-property: none !important;
-      /* transform: none !important; /* This might be too aggressive for layout transforms */
     }
     body.no-motion .transition-all,
     body.no-motion .transition,
@@ -165,6 +236,31 @@
         transition-duration: 0ms !important;
         transition-delay: 0ms !important;
     }
+    .report-title-glow {
+        animation: reportTitleGlow 3s ease-in-out infinite alternate;
+    }
+    body.no-motion .report-title-glow {
+        animation: none;
+        text-shadow: 0 0 5px var(--glow-color-1, #00D4FF), 0 0 10px var(--glow-color-1, #00D4FF), 0 0 20px var(--glow-color-2, #8B5CF6); /* Static glow for no-motion */
+    }
+
+    body.no-motion #main-content-area.page-exit-active { animation: simpleFadeOut 0.3s ease-in-out forwards !important; }
+    body.no-motion #main-content-area.page-enter-active { animation: simpleFadeIn 0.3s ease-in-out forwards !important; }
+    body.no-motion .page-transition-grid-overlay.grid-exit-active,
+    body.no-motion .page-transition-grid-overlay.grid-enter-active {
+      animation: none !important; /* No grid animation, just ensure it's hidden */
+      opacity: 0 !important;
+    }
+
+    /* Disable 3D card hover for reduced motion */
+    body.no-motion .card-3d-interactive:hover {
+      transform: none;
+      /* Keep a simpler box-shadow if desired, or remove it entirely for no-motion */
+      /* box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06); */
+    }
+    /* Ensure Dock item's 3D hover is also disabled or simplified if necessary */
+    /* Dock.tsx uses inline styles for transform, so it will check reduceMotion prop directly */
+    
   </style>
 <script type="importmap">
 {
@@ -184,7 +280,8 @@
     "react-dropzone": "https://esm.sh/react-dropzone@^14.3.8",
     "jspdf": "https://esm.sh/jspdf@^2.5.1",
     "pptxgenjs": "https://esm.sh/pptxgenjs@^3.12.0",
-    "marked": "https://esm.sh/marked@^5.0.0"
+    "marked": "https://esm.sh/marked@^5.0.0",
+    "leaflet": "https://esm.sh/leaflet@^1.9.4" 
   }
 }
 </script>
@@ -194,5 +291,6 @@
   <noscript>You need to enable JavaScript to run this app.</noscript>
   <div id="root"></div>
   <script type="module" src="/index.tsx"></script>
+  
 </body>
 </html>

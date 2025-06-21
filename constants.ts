@@ -1,6 +1,6 @@
 
-import { Home, UploadCloud, Table, BarChart2, BrainCircuit, Library, Settings as SettingsIcon, Filter, ListChecks, LayoutGrid, HelpCircle, Flag, LayoutDashboard } from 'lucide-react'; // Added LayoutDashboard, Flag
-import { NavItem, Theme, ThemeName, TableTheme, TableThemeName, TableFontOption, TableFontSizeOption, PivotConfig, AggregationType, ExportFormat, ExportFormatOption } from './types';
+import { Home, UploadCloud, Table, BarChart2, BrainCircuit, Library, Settings as SettingsIcon, Filter, ListChecks, LayoutGrid, HelpCircle, Flag, LayoutDashboard, Edit3, Map as MapIcon } from 'lucide-react'; // Added LayoutDashboard, Flag, Edit3, MapIcon
+import { NavItem, ThemeName, Theme, TableTheme, TableThemeName, TableFontOption, TableFontSizeOption, PivotConfig, AggregationType, ExportFormat, ExportFormatOption, CountryInfo, LatLngTuple } from './types';
 
 export const APP_NAME = "MasYunAI Data Connectivity";
 
@@ -136,9 +136,11 @@ export const NAVIGATION_ITEMS: NavItem[] = [
   { name: 'Data Table', icon: Table, path: '/table' },
   { name: 'Data Profiling', icon: ListChecks, path: '/summary' },
   { name: 'Table Summary', icon: LayoutGrid, path: '/table-summary' },
+  { name: 'Route Planner', icon: MapIcon, path: '/route-planner' }, // Added Route Planner
   { name: 'Milestone Planner', icon: Flag, path: '/milestones'},
+  { name: 'Whiteboard', icon: Edit3, path: '/whiteboard' },
   { name: 'Visualization', icon: BarChart2, path: '/visualize' },
-  { name: 'Dashboard Report', icon: LayoutDashboard, path: '/dashboard-report' }, // New Item
+  { name: 'Dashboard Report', icon: LayoutDashboard, path: '/dashboard-report' },
   { name: 'AI Document', icon: BrainCircuit, path: '/ai-document' },
   { name: 'File Library', icon: Library, path: '/library' },
   { name: 'Documentation', icon: HelpCircle, path: '/documentation'},
@@ -266,12 +268,7 @@ export const AVAILABLE_THEMES: Record<ThemeName, Theme> = {
     darkGray: 'slate-800',
     darkBg: 'slate-900',       // e.g. code blocks
   },
-  // SYSTEM_DEFAULT is a conceptual theme name, actual theme applied will be PURE_LIGHT or PURE_DARK
-  // It doesn't need its own color definitions here as AppContext handles the logic.
-  // However, to make it selectable, it needs an entry. We can point it to PURE_LIGHT as a fallback if JS fails.
   [ThemeName.SYSTEM_DEFAULT]: {
-    // This theme's properties will be dynamically set by AppContext
-    // based on system preference, defaulting to PURE_LIGHT if needed.
     name: ThemeName.SYSTEM_DEFAULT,
     sidebarBg: 'bg-slate-100', // Fallback to Pure Light
     contentBg: 'bg-white',
@@ -309,6 +306,11 @@ export const TABLE_FONTS: TableFontOption[] = [
   { name: 'Serif', cssClass: 'font-serif' },
   { name: 'Inter UI', cssClass: "font-['Inter',ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,'Segoe_UI',Roboto,'Helvetica_Neue',Arial,'Noto_Sans',sans-serif,'Apple_Color_Emoji','Segoe_UI_Emoji','Segoe_UI_Symbol','Noto_Color_Emoji']" },
   { name: 'Verdana', cssClass: "font-['Verdana',sans-serif]" },
+  { name: 'Arial', cssClass: "font-['Arial',_sans-serif]" },
+  { name: 'Times New Roman', cssClass: "font-['Times_New_Roman',_serif]" },
+  { name: 'Courier New', cssClass: "font-['Courier_New',_monospace]" },
+  { name: 'Georgia', cssClass: "font-['Georgia',_serif]" },
+  { name: 'Lucida Console', cssClass: "font-['Lucida_Console',_monospace]" },
 ];
 
 export const TABLE_FONT_SIZES: TableFontSizeOption[] = [
@@ -543,4 +545,23 @@ export const EXPORT_FORMAT_OPTIONS: ExportFormatOption[] = [
   { value: 'xlsx', label: 'Excel (.xlsx)' },
   { value: 'csv', label: 'CSV (.csv)' },
   { value: 'json', label: 'JSON (.json)' },
+];
+
+// Constants for Route Planner
+export const AVERAGE_TRAVEL_SPEED_KMH = 50;
+
+export const COUNTRIES_DATA: CountryInfo[] = [
+  { name: "Worldwide", code: "WW", center: [20, 0], zoom: 2 },
+  { name: "Indonesia", code: "ID", center: [-2.548926, 118.0148634], zoom: 5 },
+  { name: "Amerika Serikat", code: "US", center: [39.8283, -98.5795], zoom: 4 },
+  { name: "Kanada", code: "CA", center: [56.1304, -106.3468], zoom: 3 },
+  { name: "Brasil", code: "BR", center: [-14.2350, -51.9253], zoom: 4 },
+  { name: "Inggris", code: "GB", center: [55.3781, -3.4360], zoom: 5 },
+  { name: "Jerman", code: "DE", center: [51.1657, 10.4515], zoom: 6 },
+  { name: "Prancis", code: "FR", center: [46.603354, 1.8883335], zoom: 6 },
+  { name: "India", code: "IN", center: [20.5937, 78.9629], zoom: 5 },
+  { name: "Tiongkok", code: "CN", center: [35.8617, 104.1954], zoom: 4 },
+  { name: "Jepang", code: "JP", center: [36.2048, 138.2529], zoom: 5 },
+  { name: "Australia", code: "AU", center: [-25.2744, 133.7751], zoom: 4 },
+  { name: "Afrika Selatan", code: "ZA", center: [-30.5595, 22.9375], zoom: 5 },
 ];

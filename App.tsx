@@ -1,45 +1,44 @@
 
-import React, { useContext, useState, useEffect } from 'react';
-import { HashRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom'; // Import useLocation
+import React, { useContext, useState, useEffect, useRef } from 'react';
+import { HashRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import Dock from './components/Dock';
 import ImportData from './components/ImportData';
 import DataTableComponent from './components/DataTable';
-import DataVisualization from './components/DataVisualization';
+import DataVisualization from './components/DataVisualization'; // This line is correct if DataVisualization is default exported
 import AiDocument from './components/AiDocument';
 import FileLibrary from './components/FileLibrary';
 import Settings from './components/Settings';
 import Chatbot from './components/Chatbot';
 import DataSummary from './components/DataSummary';
-import { PivotTable } from './components/PivotTable';
+import { PivotTable } from './components/PivotTable'; 
 import DocumentationPage from './components/DocumentationPage';
-// Clock component import removed
 import DashboardView from './components/DashboardView';
 import MilestonePlanner from './components/MilestonePlanner'; 
 import DashboardReport from './components/DashboardReport';
+import WhiteboardPage from './components/WhiteboardPage'; 
+import RoutePlannerPage from './components/RoutePlannerPage'; // Added RoutePlannerPage import
 import { AppContext } from './contexts/AppContext';
 import { AppContextType } from './types';
 import { RAW_COLOR_VALUES } from './constants';
 import { MessageSquare } from 'lucide-react';
 import ScrollToTop from './components/shared/ScrollToTop';
+import LoadAndRedirect from './components/LoadAndRedirect';
+import LoadSessionAndRedirect from './components/LoadSessionAndRedirect';
 
-// New internal component to manage layout and route rendering with a key
 const AppContentLayout: React.FC = () => {
   const { theme, apiKey, reduceMotion } = useContext(AppContext) as AppContextType;
   const [isChatbotOpen, setIsChatbotOpen] = useState(false);
   const [isChatbotMaximized, setIsChatbotMaximized] = useState(false);
-  // isPresentationModeActiveForClock state removed
+  
+  const location = useLocation();
+  const [animationState, setAnimationState] = useState<'idle' | 'exiting' | 'entering'>('idle');
+  const [currentPathForAnimation, setCurrentPathForAnimation] = useState(location.pathname);
+  const [gridAnimationClass, setGridAnimationClass] = useState('');
 
   useEffect(() => {
     const handleOpenChatbot = () => setIsChatbotOpen(true);
     window.addEventListener('open-chatbot' as any, handleOpenChatbot);
-
-    // Event listener for presentationModeChange removed as Clock is no longer here
-    // If other components need this, it should be handled separately.
-
-    return () => {
-      window.removeEventListener('open-chatbot' as any, handleOpenChatbot);
-      // Cleanup for presentationModeChange listener removed
-    }
+    return () => window.removeEventListener('open-chatbot' as any, handleOpenChatbot);
   }, []);
 
   useEffect(() => {
@@ -58,6 +57,28 @@ const AppContentLayout: React.FC = () => {
     rootStyle.setProperty('--futuristic-scrollbar-thumb-hover', RAW_COLOR_VALUES[theme.accent1] || '#00D4FF');
     rootStyle.setProperty('--futuristic-scrollbar-track', RAW_COLOR_VALUES[theme.darkGray] || '#1E293B');
   }, [theme, reduceMotion]);
+  
+  useEffect(() => {
+    // Check if it's a genuine path change and not just state update for the same path, and ensure not already transitioning
+    if (location.pathname !== currentPathForAnimation && animationState === 'idle') {
+      setAnimationState('exiting');
+      setGridAnimationClass('grid-exit-active'); // Start grid exit animation
+
+      const exitTimer = setTimeout(() => {
+        setCurrentPathForAnimation(location.pathname); // This is when actual content should change
+        setAnimationState('entering');
+        setGridAnimationClass('grid-enter-active'); // Start grid enter animation
+
+        const enterTimer = setTimeout(() => {
+          setAnimationState('idle');
+          setGridAnimationClass(''); // Clear grid animation
+        }, 700); // Duration of enter animation
+        return () => clearTimeout(enterTimer);
+      }, 700); // Duration of exit animation
+      return () => clearTimeout(exitTimer);
+    }
+  }, [location.pathname, currentPathForAnimation, animationState]);
+
 
   if (!apiKey) {
     return (
@@ -75,33 +96,52 @@ const AppContentLayout: React.FC = () => {
       </div>
     );
   }
+  
+  let mainContentAreaClasses = `flex-1 overflow-y-auto futuristic-scrollbar relative`;
+  if (animationState === 'exiting') mainContentAreaClasses += ' page-exit-active';
+  if (animationState === 'entering') mainContentAreaClasses += ' page-enter-active';
+  
+  const gridColorVar = RAW_COLOR_VALUES[theme.accent1] || '#00D4FF';
 
   return (
-    <div className={`flex flex-col h-screen overflow-hidden ${theme.contentBg}`}>
-      <main
-        className={`flex-1 overflow-y-auto futuristic-scrollbar relative`}
-        style={{ paddingBottom: 'var(--dock-height)' }}
-        id="main-content-area"
-      >
-        {/* Clock component rendering removed */}
-        <Routes> 
-          <Route path="/" element={<DashboardView />} />
-          <Route path="/import" element={<ImportData />} />
-          <Route path="/table" element={<DataTableComponent />} />
-          <Route path="/summary" element={<DataSummary />} />
-          <Route path="/table-summary" element={<PivotTable />} />
-          <Route path="/milestones" element={<MilestonePlanner />} /> 
-          <Route path="/visualize" element={<DataVisualization />} />
-          <Route path="/dashboard-report" element={<DashboardReport />} />
-          <Route path="/ai-document" element={<AiDocument />} />
-          <Route path="/library" element={<FileLibrary />} />
-          <Route path="/documentation" element={<DocumentationPage />} />
-          <Route path="/settings" element={<Settings />} />
-          <Route path="*" element={<Navigate to="/" />} />
-        </Routes>
-      </main>
+    <div className={`flex h-screen overflow-hidden ${theme.contentBg}`}>
+      <div className="flex-1 flex flex-col overflow-hidden">
+        <main
+          className={mainContentAreaClasses}
+          style={{ 
+            paddingBottom: 'var(--dock-height)',
+            '--grid-color': gridColorVar 
+          } as React.CSSProperties}
+          id="main-content-area"
+        >
+          {(animationState === 'exiting' || animationState === 'entering') && (
+            <div className={`page-transition-grid-overlay ${gridAnimationClass}`}></div>
+          )}
+          <div key={currentPathForAnimation}> {/* This div gets re-keyed to swap content */}
+            <Routes> 
+              <Route path="/" element={<DashboardView />} />
+              <Route path="/import" element={<ImportData />} />
+              <Route path="/table" element={<DataTableComponent />} />
+              <Route path="/summary" element={<DataSummary />} />
+              <Route path="/table-summary" element={<PivotTable />} />
+              <Route path="/route-planner" element={<RoutePlannerPage />} /> {/* Added RoutePlannerPage route */}
+              <Route path="/milestones" element={<MilestonePlanner />} /> 
+              <Route path="/whiteboard" element={<WhiteboardPage />} />
+              <Route path="/visualize" element={<DataVisualization />} />
+              <Route path="/dashboard-report" element={<DashboardReport />} />
+              <Route path="/ai-document" element={<AiDocument />} />
+              <Route path="/library" element={<FileLibrary />} />
+              <Route path="/documentation" element={<DocumentationPage />} />
+              <Route path="/settings" element={<Settings />} />
+              <Route path="/load-from-library/:fileId" element={<LoadAndRedirect />} />
+              <Route path="/load-session-and-redirect/:sessionId" element={<LoadSessionAndRedirect />} />
+              <Route path="*" element={<Navigate to="/" />} />
+            </Routes>
+          </div>
+        </main>
 
-      <Dock />
+        <Dock />
+      </div>
 
       {!isChatbotOpen && (
         <button
@@ -127,11 +167,10 @@ const AppContentLayout: React.FC = () => {
 };
 
 const App: React.FC = () => {
-  // Main App component is now simpler
   return (
     <HashRouter>
       <ScrollToTop />
-      <AppContentLayout /> {/* Render the new layout component */}
+      <AppContentLayout />
     </HashRouter>
   );
 };
